@@ -1,0 +1,291 @@
+version: "2"
+services:
+  namenode:
+    image: uhopper/hadoop-namenode
+    container_name: namenode
+    hostname: namenode
+    volumes:
+      - hadoop_namenode:/hadoop/dfs/name
+    environment:
+      - CORE_CONF_fs_defaultFS=hdfs://namenode:8020
+      - HDFS_CONF_dfs_namenode_name_dir:/hadoop/dfs/name
+      - HDFS_CONF_dfs_namenode_http_address=namenode:50070
+      - HDFS_CONF_dfs_namenode_datanode_registration_ip___hostname___check: "false"
+    environment:
+      CLUSTER_NAME: tfm-cluster
+      constraint:node=: ferdos
+    env_file:
+      - ./hadoop.env
+    expose:
+      - 8020
+      - 9000
+    ports:
+      - 50070:50070
+      - 9870:9870
+      - 8020:8020
+  datanode-ferdos:
+    image: uhopper/hadoop-datanode
+    container_name: datanode-ferdos    
+    hostname: datanode-ferdos
+    depends_on:
+      - namenode
+    volumes:
+      - hadoop_datanode_ferdos:/hadoop/dfs/data
+    environment:
+      - CORE_CONF_fs_defaultFS=hdfs://namenode:8020
+    environment:
+      CLUSTER_NAME: tfm-cluster
+      constraint:node=: ferdos      
+    env_file:
+      - ./hadoop.env
+    expose:
+      - 50010
+      - 50020
+      - 50075
+    ports:
+      - 50075:50075
+  datanode-fer:
+    image: uhopper/hadoop-datanode
+    container_name: datanode-fer    
+    hostname: datanode-fer
+    depends_on:
+      - namenode
+    volumes:
+      - hadoop_datanode_fer:/hadoop/dfs/data
+    environment:
+      - CORE_CONF_fs_defaultFS=hdfs://namenode:8020
+    environment:
+      CLUSTER_NAME: tfm-cluster
+      constraint:node=: fer     
+    env_file:
+      - ./hadoop.env
+    expose:
+      - 50010
+      - 50020
+      - 50075
+  datanode-pregel:
+    image: uhopper/hadoop-datanode
+    container_name: datanode-pregel    
+    hostname: datanode-pregel
+    depends_on:
+      - namenode
+    volumes:
+      - hadoop_datanode_pregel:/hadoop/dfs/data
+    environment:
+      - CORE_CONF_fs_defaultFS=hdfs://namenode:8020
+    environment:
+      CLUSTER_NAME: tfm-cluster
+      constraint:node=: pregel      
+    env_file:
+      - ./hadoop.env
+    expose:
+      - 50010
+      - 50020
+      - 50075
+  datanode-erdos:
+    image: uhopper/hadoop-datanode
+    container_name: datanode-erdos    
+    hostname: datanode-erdos
+    depends_on:
+      - namenode
+    volumes:
+      - hadoop_datanode_erdos:/hadoop/dfs/data
+    environment:
+      - CORE_CONF_fs_defaultFS=hdfs://namenode:8020
+    environment:
+      CLUSTER_NAME: tfm-cluster
+      constraint:node=: erdos      
+    env_file:
+      - ./hadoop.env
+    expose:
+      - 50010
+      - 50020
+      - 50075
+  datanode-renyi:
+    image: uhopper/hadoop-datanode
+    container_name: datanode-renyi    
+    hostname: datanode-renyi
+    depends_on:
+      - namenode
+    volumes:
+      - hadoop_datanode_renyi:/hadoop/dfs/data
+    environment:
+      - CORE_CONF_fs_defaultFS=hdfs://namenode:8020
+    environment:
+      CLUSTER_NAME: tfm-cluster
+      constraint:node=: renyi      
+    env_file:
+      - ./hadoop.env
+    expose:
+      - 50010
+      - 50020
+      - 50075
+  master:
+    image: andertfm/spark-hdfs-pytlibs:latest
+    command: bin/spark-class org.apache.spark.deploy.master.Master -h master
+    container_name: master
+    hostname: master
+    expose:
+      - 7001
+      - 7002
+      - 7003
+      - 7004
+      - 7005
+      - 7006
+      - 7077
+      - 6066
+      - 8888
+    ports:
+      - 4040:4040
+      - 6066:6066
+      - 7077:7077
+      - 8080:8080
+      - 8888:8888
+    environment:
+        MASTER: spark://master:7077
+        SPARK_CONF_DIR: /conf
+        IPYTHON_PORT: 8888
+        IPYTHON_IP: 0.0.0.0
+        IPYTHON_HOME: /root/.ipython
+        PYSPARK_DRIVER_PYTHON: ipython
+        IPYTHON_PROFILE: pyspark
+    environment:
+      - SPARK_CONF_spark_eventLog_enabled=true
+      - SPARK_CONF_spark_eventLog_dir=hdfs://namenode:8020/spark-logs
+      - SPARK_CONF_spark_history_fs_logDirectory=hdfs://namenode:8020/spark-logs
+    environment:
+    - "constraint:node==ferdos"
+    env_file:
+      - ./hadoop.env 
+  worker-ferdos:
+    image: andertfm/spark-hdfs-pytlibs:latest
+    command: bin/spark-class org.apache.spark.deploy.worker.Worker spark://master:7077
+    container_name: spark-worker-ferdos
+    hostname: spark-worker-ferdos
+    environment:
+      SPARK_CONF_DIR: /conf
+      SPARK_WORKER_CORES: 6
+      SPARK_WORKER_MEMORY: 50g
+      SPARK_WORKER_PORT: 8881
+      SPARK_WORKER_WEBUI_PORT: 8081
+    links:
+      - master
+    expose:
+      - 7012
+      - 7013
+      - 7014
+      - 7015
+      - 7016
+      - 8881
+    ports:
+      - 8081:8081
+    environment:
+      - "constraint:node==ferdos"
+  worker-fer:
+    image: andertfm/spark-hdfs-pytlibs:latest
+    command: bin/spark-class org.apache.spark.deploy.worker.Worker spark://master:7077
+    container_name: spark-worker-fer
+    hostname: spark-worker-fer
+    environment:
+      SPARK_CONF_DIR: /conf
+      SPARK_WORKER_CORES: 6
+      SPARK_WORKER_MEMORY: 50g
+      SPARK_WORKER_PORT: 8881
+      SPARK_WORKER_WEBUI_PORT: 8081
+    expose:
+      - 7012
+      - 7013
+      - 7014
+      - 7015
+      - 7016
+      - 8881
+    ports:
+      - 8081:8081
+    environment:
+      - "constraint:node==fer" 
+  worker-pregel:
+    image: andertfm/spark-hdfs-pytlibs:latest
+    command: bin/spark-class org.apache.spark.deploy.worker.Worker spark://master:7077
+    container_name: spark-worker-pregel
+    hostname: spark-worker-pregel
+    environment:
+      SPARK_CONF_DIR: /conf
+      SPARK_WORKER_CORES: 2
+      SPARK_WORKER_MEMORY: 3g
+      SPARK_WORKER_PORT: 8881
+      SPARK_WORKER_WEBUI_PORT: 8081
+    expose:
+      - 7012
+      - 7013
+      - 7014
+      - 7015
+      - 7016
+      - 8881
+    ports:
+      - 8081:8081
+    environment:
+      - "constraint:node==pregel"
+  worker-erdos:
+    image: andertfm/spark-hdfs-pytlibs:latest
+    command: bin/spark-class org.apache.spark.deploy.worker.Worker spark://master:7077
+    container_name: spark-worker-erdos
+    hostname: spark-worker-erdos
+    environment:
+      SPARK_CONF_DIR: /conf
+      SPARK_WORKER_CORES: 6
+      SPARK_WORKER_MEMORY: 30g
+      SPARK_WORKER_PORT: 8881
+      SPARK_WORKER_WEBUI_PORT: 8081
+    expose:
+      - 7012
+      - 7013
+      - 7014
+      - 7015
+      - 7016
+      - 8881
+    ports:
+      - 8081:8081
+    environment:
+      - "constraint:node==erdos" 
+  worker-renyi:
+    image: andertfm/spark-hdfs-pytlibs:latest
+    command: bin/spark-class org.apache.spark.deploy.worker.Worker spark://master:7077
+    container_name: spark-worker-renyi
+    hostname: spark-worker-renyi
+    environment:
+      SPARK_CONF_DIR: /conf
+      SPARK_WORKER_CORES: 6
+      SPARK_WORKER_MEMORY: 30g
+      SPARK_WORKER_PORT: 8881
+      SPARK_WORKER_WEBUI_PORT: 8081
+    expose:
+      - 7012
+      - 7013
+      - 7014
+      - 7015
+      - 7016
+      - 8881
+    ports:
+      - 8081:8081
+    environment:
+      - "constraint:node==renyi"
+networks:
+  default:
+    external:
+        name: redtfm
+volumes:
+  hadoop_namenode:
+    external: true
+  hadoop_datanode_ferdos:
+    external: true
+  hadoop_datanode_fer:
+    external: true
+  hadoop_datanode_pregel:
+    external: true
+  hadoop_datanode_erdos:
+    external: true
+  hadoop_datanode_renyi:
+    external: true
+#ERROR: Volume hadoop_datanode_renyi declared as external, but could not be found. 
+#Please create the volume manually using `docker volume create --name=hadoop_datanode_renyi` and try again.
+#En cada nodo ha sido necesario crear un volumen
