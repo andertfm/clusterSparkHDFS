@@ -44,6 +44,27 @@ services:
       - 50075
     ports:
       - 50075:50075
+  datanode-kalman:
+    image: uhopper/hadoop-datanode
+    container_name: datanode-kalman    
+    hostname: datanode-kalman
+    depends_on:
+      - namenode
+    volumes:
+      - hadoop_datanode_kalman:/hadoop/dfs/data
+    environment:
+      - CORE_CONF_fs_defaultFS=hdfs://namenode:8020
+    environment:
+      CLUSTER_NAME: tfm-cluster
+      constraint:node=: kalman      
+    env_file:
+      - ./hadoop.env
+    expose:
+      - 50010
+      - 50020
+      - 50075
+    ports:
+      - 50075:50075
   datanode-fer:
     image: uhopper/hadoop-datanode
     container_name: datanode-fer    
@@ -181,6 +202,28 @@ services:
       - 8081:8081
     environment:
       - "constraint:node==ferdos"
+  worker-kalman:
+    image: andertfm/spark-hdfs-pytlibs:latest
+    command: bin/spark-class org.apache.spark.deploy.worker.Worker spark://master:7077
+    container_name: spark-worker-kalman
+    hostname: spark-worker-kalman
+    environment:
+      SPARK_CONF_DIR: /conf
+      SPARK_WORKER_CORES: 6
+      SPARK_WORKER_MEMORY: 50g
+      SPARK_WORKER_PORT: 8881
+      SPARK_WORKER_WEBUI_PORT: 8081
+    expose:
+      - 7012
+      - 7013
+      - 7014
+      - 7015
+      - 7016
+      - 8881
+    ports:
+      - 8081:8081
+    environment:
+      - "constraint:node==kalman"
   worker-fer:
     image: andertfm/spark-hdfs-pytlibs:latest
     command: bin/spark-class org.apache.spark.deploy.worker.Worker spark://master:7077
@@ -285,6 +328,8 @@ volumes:
   hadoop_datanode_erdos:
     external: true
   hadoop_datanode_renyi:
+    external: true
+  hadoop_datanode_kalman:
     external: true
 #ERROR: Volume hadoop_datanode_renyi declared as external, but could not be found. 
 #Please create the volume manually using `docker volume create --name=hadoop_datanode_renyi` and try again.
